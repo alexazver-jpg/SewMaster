@@ -1,0 +1,71 @@
+name: Build Windows EXE
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.8 (последняя версия с поддержкой Windows 7)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.8.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller==5.13.2
+
+      - name: Run core smoke tests
+        run: python tests/smoke.py
+
+      - name: Build SewMaster.exe (onefile, windowed)
+        run: >
+          pyinstaller --noconfirm --clean --onefile --windowed
+          --name SewMaster
+          --icon assets/icons/icon.ico
+          --add-data "assets;assets"
+          --hidden-import reportlab.lib.utils
+          app.py
+
+      - name: Check executable
+        run: |
+          if (-Not (Test-Path "dist/SewMaster.exe")) { throw "SewMaster.exe not found" }
+          (Get-Item "dist/SewMaster.exe").Length
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SewMaster-windows
+          path: dist/SewMaster.exe
+          if-no-files-found: error
+
+      - name: Create GitHub Release with exe
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/SewMaster.exe
+          generate_release_notes: true
+          body: |
+            SewMaster — конструктор выкроек для домашнего пошива.
+
+            ## Скачать
+            * **SewMaster.exe** — внизу страницы, в разделе Assets.
+            Работает на Windows 7 SP1 – Windows 11, установка не требуется.
+
+            ## Важно для Windows 7
+            Нужен Service Pack 1 и обновление KB2533623, а также
+            Visual C++ Redistributable 2015-2019 (x86/x64 по разрядности).
+
+            ## Первые шаги
+            1. Запустите SewMaster.exe.
+            2. Выберите модель (трусы, боксёры, майка, футболка).
+            3. Снимите мерки по подсказкам программы.
+            4. Сохраните PDF и распечатайте в масштабе 100%.

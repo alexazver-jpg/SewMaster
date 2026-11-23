@@ -1,0 +1,41 @@
+{
+  "catalog_version": 1,
+  "updated": "2026-11-23",
+  "description": "Онлайн-каталог моделей выкроек SewMaster. Скачанные модели появляются в списке моделей программы.",
+  "models": [
+    {
+      "id": "briefs_high",
+      "title": "Трусы-слипы, высокая посадка",
+      "description": "Классические слипы с завышенной линией талии (+2,5 см). Комфортная модель из хлопкового трикотажа.",
+      "base_model": "briefs",
+      "draft_type": "briefs",
+      "params": {"waist_style": "high", "ease": 1.0, "elastic_w": 3.0, "allowance": 0.7},
+      "fabric_hint": "Трикотаж с эластаном, расход ~60 см при ширине 150 см."
+    },
+    {
+      "id": "boxers_long",
+      "title": "Трусы-боксёры, длинные",
+      "description": "Удлинённые боксёры-шорты (по боку 38 см) для дома и сна. Шьются из байки или трикотажа.",
+      "base_model": "boxers",
+      "draft_type": "boxers",
+      "params": {"ease": 4.0, "elastic_w": 3.0, "allowance": 1.0},
+      "measurements": {"side_len": 38, "thigh": 64},
+      "fabric_hint": "Байка, футер, сатин. Расход ~1 м при ширине 150 см."
+    },
+    {
+      "id": "tank_long",
+      "title": "Майка удлинённая, свободный крой",
+      "description": "Майка прямого силуэта длиной до линии бедра — базовая вещь гардероба, отлично идёт новичкам.",
+      "base_model": "tank",
+      "draft_type": "tank",
+      "params": {"fit": "free", "strap_w": 5.0, "neck_front": 8.0, "allowance": 1.0},
+      "fabric_hint": "Кулирка или интерлок, расход ~1,5 м при ширине 150 см."
+    }
+  ],
+  "links": [
+    {
+      "title": "Репозиторий SewMaster",
+      "url": "https://github.com/alexazver-jpg/SewMaster"
+    }
+  ]
+}

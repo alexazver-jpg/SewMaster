@@ -1,0 +1,2 @@
+# Runtime-зависимости SewMaster (Python 3.8+, Windows 7 совместимо)
+reportlab==4.2.5
