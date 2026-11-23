@@ -70,8 +70,8 @@ class MainWindow(tk.Tk):
     def __init__(self):
         tk.Tk.__init__(self)
         self.title(APP_TITLE)
-        self.geometry("980x680")
-        self.minsize(880, 600)
+        self.geometry("1000x740")
+        self.minsize(900, 640)
         self.configure(bg=BG)
 
         # ---- шапка ----
@@ -91,8 +91,8 @@ class MainWindow(tk.Tk):
         cards = tk.Frame(self, bg=BG)
         cards.pack(fill=tk.X, padx=24, pady=18)
         data = [
-            ("🧵  Новая выкройка", "Трусы, боксёры, майка, футболка —\n"
-             "мастер за 5 шагов", self.new_pattern, BLUE),
+            ("🧵  Новая выкройка", "Трусы, шорты, майка, футболка, лонгслив,\n"
+             "юбка — мастер за 5 шагов", self.new_pattern, BLUE),
             ("📂  Открыть проект", "Ранее сохранённые мерки\nи выкройки",
              self.open_project, "white"),
             ("🌐  Онлайн-каталог", "Скачать дополнительные модели\n"
@@ -117,28 +117,34 @@ class MainWindow(tk.Tk):
                       font=(ui_family(), 9, "bold"), padx=12, pady=3
                       ).pack(pady=(8, 16))
 
-        # ---- доступные модели ----
+        # ---- доступные модели (карточки в несколько рядов) ----
         tk.Label(self, text="Встроенные модели", bg=BG, fg=DARK,
                  font=(ui_family(), 12, "bold")).pack(anchor="w", padx=26,
                                                       pady=(10, 2))
         models_frame = tk.Frame(self, bg=BG)
         models_frame.pack(fill=tk.BOTH, expand=True, padx=24, pady=(0, 8))
+        n_models = len(MODELS)
         for i, model in enumerate(MODELS):
+            row, col = divmod(i, 4)
             card = tk.Frame(models_frame, bg="white", highlightthickness=1,
                             highlightbackground=GRID_LIGHT)
-            card.grid(row=0, column=i, padx=8, pady=6, sticky="nsew")
-            models_frame.grid_columnconfigure(i, weight=1)
+            card.grid(row=row, column=col, padx=8, pady=6, sticky="nsew")
+            models_frame.grid_columnconfigure(col, weight=1)
+            models_frame.grid_rowconfigure(row, weight=1)
             try:
                 draft = model.build(model.default_measurements(),
                                     model.default_params())
-                thumb = tk.Canvas(card, width=180, height=130, bg="white",
+                thumb = tk.Canvas(card, width=180, height=115, bg="white",
                                   highlightthickness=0)
                 thumb.pack(padx=8, pady=(8, 0))
                 draw_thumb(thumb, draft)
             except Exception:
-                pass
+                thumb = tk.Canvas(card, width=180, height=115, bg="white",
+                                  highlightthickness=0)
+                thumb.pack(padx=8, pady=(8, 0))
             tk.Label(card, text=model.title, bg="white", fg=DARK,
-                     font=(ui_family(), 10, "bold")).pack(pady=(2, 0))
+                     font=(ui_family(), 9, "bold"), wraplength=180,
+                     height=2).pack(pady=(2, 0))
             tk.Label(card, text=model.fabric_hint, bg="white", fg=GRAY,
                      font=(ui_family(), 8), wraplength=170,
                      justify=tk.LEFT).pack(padx=6, pady=(0, 4))

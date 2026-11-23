@@ -30,11 +30,16 @@ def build(m: Dict[str, float], p: Dict[str, object]) -> DraftResult:
 
     w = chest / 4.0 + ease / 2.0
     hem_w = max(w, hips / 4.0 + 2.0)
-    neck_w = neck / 6.0 + 0.5
-    neck_f = neck_w + 1.5
-    neck_b = 2.2
+    # Горловина (v1.1.0, исправление): суммарная длина перед+зад должна
+    # быть ~0.6x Ош, чтобы голова прошла в ворот с растяжением бейки.
+    neck_w = neck / 6.0 + 1.8
+    neck_f = neck_w + 3.3
+    neck_b = 2.6
     slope = 4.0                                  # скос плеча
-    arm_d = chest / 10.0 + 12.0 + (2.0 if fit == "over" else 0.0)
+    # Пройма: от груди И от обхвата плеча — берём большую глубину,
+    # чтобы рукав проходил по руке любой комплекции.
+    arm_d = max(chest / 10.0 + 12.0 + (2.0 if fit == "over" else 0.0),
+                arm / 2.0 + 8.0)
 
     def panel(piece_id: str, name: str, neck_depth: float,
               tag: str) -> PatternPiece:
@@ -72,14 +77,26 @@ def build(m: Dict[str, float], p: Dict[str, object]) -> DraftResult:
     p_front = panel("front", "ПОЛОЧКА ФУТБОЛКИ", neck_f, "ПОЛОЧКА (перед)")
     p_back = panel("back", "СПИНКА ФУТБОЛКИ", neck_b, "СПИНКА (зад)")
 
-    # ---------------- рукав -------------------------------------------------
-    w_top = arm / 2.0 + (7.5 if fit == "fit" else 9.0)
-    w_bot = w_top - 4.0
+    # ---------------- рукав (v1.1.0, исправление) -------------------------
+    # Пройма-кольцо = пройма полочки + пройма спинки. Окат рукава должен
+    # быть равен кольцу (±1 см), иначе рукав не втачать. Труба рукава
+    # наверху = ширине детали w_top — должна быть больше обхвата плеча.
+    gf = p_front.contour.seg_groups()
+    gb = p_back.contour.seg_groups()
+
+    def glen(g, idx):
+        return sum(dist(g[idx][i], g[idx][i + 1]) for i in range(len(g[idx]) - 1))
+
+    armhole_f = glen(gf, 2)
+    armhole_b = glen(gb, 2)
+    ring = armhole_f + armhole_b
+    w_top = max(arm + 6.0, ring - 0.2)
+    w_bot = arm + 4.0                        # труба короткого рукава — свободно
 
     TL = (0.0, 2.0)
     TR = (w_top, 2.0)
-    BR = (w_top - 2.0, sleeve_len)
-    BL = (2.0, sleeve_len)
+    BR = ((w_top + w_bot) / 2.0, sleeve_len)
+    BL = ((w_top - w_bot) / 2.0, sleeve_len)
 
     sl = Contour(TL)
     sl.cubic((w_top * 0.3, 0.0), (w_top * 0.7, 0.0), TR)     # верхний край (окат-стрелка)
@@ -87,38 +104,36 @@ def build(m: Dict[str, float], p: Dict[str, object]) -> DraftResult:
     sl.line(BL)                                              # низ рукава
     sl.line(TL)                                              # задний срез
 
-    p_sleeve = PatternPiece("sleeve", "РУКАВ", sl, "2 детали")
+    p_sleeve = PatternPiece("sleeve", "РУКАВ", sl, "2 детали (вторая — зеркально)")
     p_sleeve.allowance = allow
     p_sleeve.grain = ((w_top / 2.0, 4.0), (w_top / 2.0, sleeve_len - 3.0))
     p_sleeve.notches = [Notch((w_top / 2.0, 2.6), 90.0, "середина оката")]
     p_sleeve.labels = [PieceLabel((w_top / 2.0, sleeve_len * 0.55),
-                                  ["РУКАВ", "2 детали"], bold=True)]
+                                  ["РУКАВ", "2 детали (зеркально)"], bold=True)]
 
     # контрольные длины
-    gf = p_front.contour.seg_groups()
-    gb = p_back.contour.seg_groups()
     gs = p_sleeve.contour.seg_groups()
-
-    def glen(g, idx):
-        return sum(dist(g[idx][i], g[idx][i + 1]) for i in range(len(g[idx]) - 1))
 
     side_f = glen(gf, 3)
     side_b = glen(gb, 3)
     if abs(side_f - side_b) > 0.05:
         raise AssertionError("Боковые швы полочки и спинки должны совпадать: "
                              "%.3f != %.3f" % (side_f, side_b))
-    armhole_f = glen(gf, 2)
-    armhole_b = glen(gb, 2)
     shoulder = dist((neck_w, 0.0), (w, slope))
     cap_top = glen(gs, 0)
+    if abs(cap_top - ring) > 1.5:
+        raise AssertionError("Окат рукава (%.1f) должен быть равен пройме-кольцу "
+                             "(%.1f)" % (cap_top, ring))
 
     checks = [
         ("Боковой шов: полочка", side_f),
         ("Боковой шов: спинка", side_b),
         ("Пройма: полочка", armhole_f),
         ("Пройма: спинка", armhole_b),
+        ("Пройма-кольцо (перед + зад)", ring),
+        ("Окат рукава (должен быть равен кольцу)", cap_top),
         ("Длина плечевого шва", shoulder),
-        ("Верхний край рукава", cap_top),
+        ("Ширина рукава внизу (труба)", w_bot),
     ]
 
     seams = [

@@ -115,8 +115,9 @@ class Wizard(tk.Toplevel):
         f = tk.Frame(self.container, bg=BG)
         f.pack(fill=tk.BOTH, expand=True)
         windows.page_header(f, "Выберите модель",
-                            "Что будем шить? В первой версии — бельё и лёгкий верх. "
-                            "Позже модели можно докачать из онлайн-каталога.")
+                            "Что будем шить? Бельё, верх и низ — 7 встроенных "
+                            "моделей. Дополнительные можно докачать из "
+                            "онлайн-каталога.")
 
         wrap = tk.Frame(f, bg=BG)
         wrap.pack(fill=tk.BOTH, expand=True, padx=24, pady=8)

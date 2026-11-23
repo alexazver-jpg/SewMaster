@@ -25,10 +25,17 @@ def build(m: Dict[str, float], p: Dict[str, object]) -> DraftResult:
     elastic_w = float(p.get("elastic_w", 3.0))
 
     w = hips / 4.0 + 0.75 + ease / 2.0          # ширина полотнища по талии/бёдрам
-    leg_w = thigh / 2.0 + 1.5                    # внутренняя точка низа штанины
-    out_w = leg_w + 2.0                          # внешняя точка низа (лёгкое расширение)
-    if out_w < w:
-        out_w = w
+    # Геометрия низа штанины (v1.1.0, исправление):
+    #   hem_w — ширина низа на ОДНО панель (полуобхват отверстия ноги),
+    #   in_w  — внутренняя точка низа у средней линии (близко к сгибу),
+    #   out_w — внешняя (боковая) точка низа.
+    # Отверстие ноги на готовом изделии = hem_w x 2 (перед + зад).
+    hem_w = thigh / 2.0 + 3.0
+    in_w = 2.5
+    out_w = in_w + hem_w
+    if out_w < w + 1.0:
+        out_w = w + 1.0
+        hem_w = out_w - in_w
 
     yc_f = rise - 9.5                            # высота шаговой точки спереди
     yc_b = rise - 8.0                            # сзади
@@ -39,20 +46,19 @@ def build(m: Dict[str, float], p: Dict[str, object]) -> DraftResult:
     if side_len < yc_b + 6.0:
         side_len = yc_b + 6.0                    # штанина не короче шага
 
-    def panel(piece_id: str, name: str, cx: float, yc: float,
-              ctrl_deep: float) -> PatternPiece:
+    def panel(piece_id: str, name: str, cx: float, yc: float) -> PatternPiece:
         A = (0.0, 0.0)
         B = (w, 0.0)
         H_out = (out_w, side_len)
-        H_in = (leg_w, side_len)
+        H_in = (in_w, side_len)
         C = (cx, yc)
         B0 = (0.0, yc - 1.5)
 
         c = Contour(A)
         c.line(B)                                              # верхний срез (пояс)
         c.cubic((w + 0.2, side_len * 0.55), (out_w - 0.6, side_len - 3.0), H_out)
-        c.line(H_in)                                           # низ штанины
-        c.cubic((leg_w - 2.5, side_len - 5.0), (ctrl_deep, yc + 5.5), C)  # шаговый шов
+        c.line(H_in)                                           # низ штанины (широкий прямой край)
+        c.cubic((in_w - 0.3, side_len - 6.0), (cx + 1.2, yc + 5.0), C)  # шаговый шов (короткий)
         c.line(B0)                                             # подъём к центру
         c.line(A)                                              # средняя линия (сгиб)
 
@@ -65,14 +71,15 @@ def build(m: Dict[str, float], p: Dict[str, object]) -> DraftResult:
         piece.notches = [
             Notch((w, 8.0), 180.0, "метка бокового шва"),
             Notch(C, math.degrees(math.atan2(-5.0, 8.0)), "ластовица"),
+            Notch(((in_w + out_w) / 2.0, side_len), 90.0, "середина низа штанины"),
         ]
         piece.labels = [PieceLabel((w * 0.5, (yc + side_len) / 2.0 + 1.0),
                                    [name.split()[0], "сгиб по средней линии"],
                                    bold=True)]
         return piece
 
-    p_front = panel("front", "ПЕРЕДНЯЯ ПАНЕЛЬ", 4.5, yc_f, 9.0)
-    p_back = panel("back", "ЗАДНЯЯ ПАНЕЛЬ", 6.5, yc_b, 11.5)
+    p_front = panel("front", "ПЕРЕДНЯЯ ПАНЕЛЬ", 4.5, yc_f)
+    p_back = panel("back", "ЗАДНЯЯ ПАНЕЛЬ", 6.5, yc_b)
 
     # контрольные длины
     g_front = p_front.contour.seg_groups()
@@ -94,7 +101,7 @@ def build(m: Dict[str, float], p: Dict[str, object]) -> DraftResult:
         ("Шаговый шов: перед", inseam_f),
         ("Шаговый шов: зад", inseam_b),
         ("Средний шов: перед + зад", mid_f + mid_b),
-        ("Обхват штанины внизу", (out_w + leg_w) * 2.0),
+        ("Обхват штанины внизу (отверстие для ноги)", 2.0 * hem_w),
     ]
 
     seams = [

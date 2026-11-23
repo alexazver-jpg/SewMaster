@@ -30,6 +30,45 @@
       "draft_type": "tank",
       "params": {"fit": "free", "strap_w": 5.0, "neck_front": 8.0, "allowance": 1.0},
       "fabric_hint": "Кулирка или интерлок, расход ~1,5 м при ширине 150 см."
+    },
+    {
+      "id": "skirt_maxi",
+      "title": "Юбка-солнце, макси",
+      "description": "Юбка в пол (80 см) для лета и праздников. Мягко ложится складками, шьётся за один вечер.",
+      "base_model": "skirt_sun",
+      "draft_type": "skirt_sun",
+      "params": {"ease": 6.0, "elastic_w": 4.0, "allowance": 1.0},
+      "measurements": {"length": 80},
+      "fabric_hint": "Вискоза, шифон на подкладку, сатин. Расход ~2,4 м при ширине 150 см."
+    },
+    {
+      "id": "skirt_mini",
+      "title": "Юбка-солнце, мини",
+      "description": "Короткая пышная юбочка 42 см — на резинке, без застёжки. Отличный первый проект.",
+      "base_model": "skirt_sun",
+      "draft_type": "skirt_sun",
+      "params": {"ease": 4.0, "elastic_w": 3.0, "allowance": 1.0},
+      "measurements": {"length": 42},
+      "fabric_hint": "Габардин, сатин. Расход ~1,4 м при ширине 150 см."
+    },
+    {
+      "id": "shorts_home",
+      "title": "Шорты домашние, очень свободные",
+      "description": "Просторные шорты для дома и сна: широкая штанина, мягкий пояс на резинке.",
+      "base_model": "shorts",
+      "draft_type": "shorts",
+      "params": {"ease": 5.0, "leg_w": 0.0, "elastic_w": 4.0, "allowance": 1.0},
+      "measurements": {"side_len": 40, "thigh": 64},
+      "fabric_hint": "Байка, футер, вискоза. Расход ~1,2 м при ширине 150 см."
+    },
+    {
+      "id": "longsleeve_over",
+      "title": "Лонгслив оверсайз",
+      "description": "Свободный лонгслив с широким рукавом и манжетами — базовый слой на осень.",
+      "base_model": "longsleeve",
+      "draft_type": "longsleeve",
+      "params": {"fit": "over", "cuffs": "yes", "allowance": 1.0},
+      "fabric_hint": "Футер с лайкрой, интерлок. Расход ~2,4 м при ширине 150 см."
     }
   ],
   "links": [

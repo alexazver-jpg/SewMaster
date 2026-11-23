@@ -51,6 +51,50 @@ def check_draft(model, draft):
             "контур кроя не охватывает линию шва: " + piece.name
 
 
+def check_wearability(model, draft, meas):
+    """Регрессия v1.1.0: изделия должны собираться и надеваться.
+    В v1.0.0 боксёры имели отверстие для ноги 8 см (бедро ~62),
+    рукав футболки не совпадал с проймой, горловина не проходила голову."""
+    from core.geom import dist
+
+    def slen(piece, idx):
+        g = piece.contour.seg_groups(48)
+        seg = g[idx]
+        return sum(dist(seg[j], seg[j + 1]) for j in range(len(seg) - 1))
+
+    mid = model.model_id
+    hips = float(meas.get("hips") or 0)
+    thigh = float(meas.get("thigh") or hips * 0.62)
+
+    if mid in ("boxers", "shorts"):
+        opening = 2.0 * slen(draft.pieces[0], 2)   # перед + зад
+        assert opening >= thigh + 1.0, \
+            "%s: отверстие для ноги %.1f < бедра %.1f" % (mid, opening, thigh)
+    if mid in ("briefs", "boxers", "shorts", "skirt_sun"):
+        # пояс/кольцо должны проходить через бёдра
+        if mid == "skirt_sun":
+            r = [v for n, v in draft.checks if n.startswith("Радиус линии пояса")][0]
+            ring = 2 * math.pi * r
+        else:
+            ring = 2.0 * (slen(draft.pieces[0], 0) + slen(draft.pieces[1], 0))
+        assert ring >= hips + 1.0, \
+            "%s: пояс %.1f не проходит через бёдра %.1f" % (mid, ring, hips)
+    if mid in ("tank", "tee", "longsleeve"):
+        neck_open = slen(draft.pieces[0], 0) + slen(draft.pieces[1], 0)
+        neck = float(meas.get("neck") or 36)
+        assert neck_open >= neck * 0.55, \
+            "%s: горловина %.1f слишком мала для Ош %.0f" % (mid, neck_open, neck)
+    if mid in ("tee", "longsleeve"):
+        # окат рукава == пройме-кольцу (assert уже в drafts, но продублируем)
+        ring = slen(draft.pieces[0], 2) + slen(draft.pieces[1], 2)
+        cap = slen(draft.pieces[2], 0)
+        assert abs(cap - ring) <= 1.5, \
+            "%s: окат %.1f != пройма-кольцо %.1f" % (mid, cap, ring)
+        arm = float(meas.get("arm") or 30)
+        assert cap >= arm + 4.0, \
+            "%s: труба рукава %.1f уже плеча %.1f" % (mid, cap, arm)
+
+
 def main():
     check_gui_imports()
     results = []
@@ -59,6 +103,7 @@ def main():
         params = model.default_params()
         draft = model.build(meas, params)
         check_draft(model, draft)
+        check_wearability(model, draft, meas)
 
         # с нестандартными мерками
         meas2 = dict(meas)
@@ -70,6 +115,7 @@ def main():
                 params2[pf.key] = pf.default
         draft2 = model.build(meas2, params2)
         check_draft(model, draft2)
+        check_wearability(model, draft2, meas2)
 
         # инструкция
         sections = build_instructions(model, meas, params, "straight", draft)
