@@ -15,7 +15,7 @@ from core.pdfout import export_pdf
 from core.piece import DraftResult
 from core.sewing import MACHINES
 from core.storage import (PROJECT_EXT, Project, remember_recent,
-                            save_project, load_settings)
+                          save_project, load_settings, save_settings)
 from .preview import PreviewPanel
 from .theme import (BG, BLUE, BLUE_BG, BLUE_LIGHT, DARK, GRAY, GREEN,
                     GRID_LIGHT, ui_family)
@@ -479,12 +479,18 @@ class Wizard(tk.Toplevel):
         st = self.state
         if st.draft is None:
             return
+        settings = load_settings()
         name = "SewMaster_%s_%s.pdf" % (st.model.model_id,
                                         time.strftime("%Y-%m-%d"))
+        last_dir = str(settings.get("last_pdf_dir", "") or "")
+        dlg_kwargs = {}
+        if last_dir and os.path.isdir(last_dir):
+            dlg_kwargs["initialdir"] = last_dir
         path = filedialog.asksaveasfilename(
             parent=self, title="Экспорт выкройки в PDF",
             defaultextension=".pdf", initialfile=name,
-            filetypes=[("PDF", "*.pdf"), ("Все файлы", "*.*")])
+            filetypes=[("PDF", "*.pdf"), ("Все файлы", "*.*")],
+            **dlg_kwargs)
         if not path:
             return
         try:
@@ -495,7 +501,6 @@ class Wizard(tk.Toplevel):
             messagebox.showerror("Ошибка экспорта",
                                  "Не удалось создать PDF:\n%s" % e, parent=self)
             return
-        settings = load_settings()
         settings["last_pdf_dir"] = os.path.dirname(path)
         save_settings(settings)
         if messagebox.askyesno("PDF готов",

@@ -83,6 +83,11 @@ def run():
     time.sleep(0.5)
     grab(wiz, "06_wizard_result.png")
 
+    # регрессия v1.0.1: полный прогон кнопок «Экспорт PDF» и
+    # «Сохранить проект» с подменёнными файловыми диалогами
+    # (в v1.0.0 здесь падал NameError: save_settings is not defined)
+    test_export_and_save(wiz)
+
     # окно инструкции
     from gui import windows as W
     from core.instructions import build_instructions
@@ -98,6 +103,45 @@ def run():
     iw.destroy()
     root.destroy()
     print("GUI SMOKE OK")
+
+
+def test_export_and_save(wiz):
+    """Нажатие «Экспорт PDF (A4)» и «Сохранить проект» до конца:
+    файловые диалоги и messagebox подменяются, проверяется, что PDF и
+    .sewproj реально создаются и ничего не падает (регрессия v1.0.0,
+    когда export_pdf_action завершался NameError)."""
+    import gui.wizard as W
+
+    pdf_path = os.path.join(OUT, "regress_export.pdf")
+    proj_path = os.path.join(OUT, "regress_project.sewproj")
+
+    def fake_asksaveasfilename(**kw):
+        title = kw.get("title", "")
+        if title.startswith("Экспорт"):
+            return pdf_path
+        if title.startswith("Сохранить проект"):
+            return proj_path
+        return ""
+
+    orig_ask = W.filedialog.asksaveasfilename
+    orig_showinfo = W.messagebox.showinfo
+    orig_askyesno = W.messagebox.askyesno
+    W.filedialog.asksaveasfilename = fake_asksaveasfilename
+    W.messagebox.showinfo = lambda *a, **kw: None
+    W.messagebox.askyesno = lambda *a, **kw: False
+    try:
+        wiz.export_pdf_action()
+        wiz.save_project_action()
+    finally:
+        W.filedialog.asksaveasfilename = orig_ask
+        W.messagebox.showinfo = orig_showinfo
+        W.messagebox.askyesno = orig_askyesno
+
+    assert os.path.exists(pdf_path) and os.path.getsize(pdf_path) > 20000, \
+        "PDF не создан кнопкой экспорта"
+    assert os.path.exists(proj_path), "проект не сохранён кнопкой"
+    print("EXPORT/SAVE REGRESSION OK: %s (%d КБ), %s" % (
+        pdf_path, os.path.getsize(pdf_path) // 1024, proj_path))
 
 
 def _first_model():

@@ -24,7 +24,18 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt pyinstaller==5.13.2
+          pip install -r requirements.txt pyinstaller==5.13.2 pyflakes
+
+      - name: Lint - undefined names (pyflakes)
+        shell: bash
+        run: |
+          OUT=$(python -m pyflakes app.py gui core tests 2>&1 | grep "undefined name" || true)
+          if [ -n "$OUT" ]; then
+            echo "::error::Обнаружены неопределённые имена (NameError во время работы):"
+            echo "$OUT"
+            exit 1
+          fi
+          echo "pyflakes: неопределённых имён нет"
 
       - name: Run core smoke tests
         run: python tests/smoke.py

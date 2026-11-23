@@ -19,6 +19,18 @@ from core.models import MODELS
 from core.pdfout import export_pdf
 from core.instructions import build_instructions, instructions_to_text
 
+
+def check_gui_imports():
+    """Регрессия v1.0.1: в v1.0.0 кнопка «Экспорт PDF» падала с
+    NameError: name 'save_settings' is not defined — функция не была
+    импортирована в gui/wizard.py. Проверяем, что все имена, которые
+    использует мастер, реально есть в его пространстве имён."""
+    import gui.wizard as wizard_mod
+    for name in ("save_settings", "load_settings", "save_project",
+                 "remember_recent", "Project", "export_pdf", "MACHINES"):
+        assert hasattr(wizard_mod, name), \
+            "gui/wizard.py: имя %r не импортировано (NameError при нажатии кнопки)" % name
+
 OUT = os.environ.get("SEWMASTER_TEST_OUT",
                      os.path.join(os.path.dirname(__file__), "..", "..", "test_pdfs"))
 os.makedirs(OUT, exist_ok=True)
@@ -40,6 +52,7 @@ def check_draft(model, draft):
 
 
 def main():
+    check_gui_imports()
     results = []
     for model in MODELS:
         meas = model.default_measurements()
