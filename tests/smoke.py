@@ -6,6 +6,13 @@ import math
 import os
 import sys
 
+# Windows-консоль может использовать cp1251/cp1252 — переключаем на UTF-8
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from core.models import MODELS

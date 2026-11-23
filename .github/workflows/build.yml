@@ -25,6 +25,9 @@ jobs:
 
       - name: Run core smoke tests
         run: python tests/smoke.py
+        env:
+          PYTHONIOENCODING: utf-8
+          PYTHONUTF8: '1' 
 
       - name: Build SewMaster.exe (onefile, windowed)
         run: >
