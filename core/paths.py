@@ -6,7 +6,7 @@ import os
 import sys
 
 APP_NAME = "SewMaster"
-APP_VERSION = "1.1.0"
+APP_VERSION = "1.2.0"
 
 
 def project_root() -> str:

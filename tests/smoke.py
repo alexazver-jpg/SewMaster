@@ -43,7 +43,8 @@ def check_draft(model, draft):
         assert x1 - x0 > 5 and y1 - y0 > 5, \
             "деталь %s подозрительно мала: %g x %g" % (piece.name, x1 - x0, y1 - y0)
         cut = piece.cut_poly
-        assert len(cut) >= 10, "слишком мало точек в контуре кроя"
+        # прямоугольные детали (наволочка) законно имеют 4-5 точек
+        assert len(cut) >= 4, "слишком мало точек в контуре кроя"
         # линия кроя должна быть ВНЕ линии шва (площадь больше)
         from core.geom import polygon_area
         seam = piece.contour.points(20) + [piece.contour.start]
@@ -93,6 +94,23 @@ def check_wearability(model, draft, meas):
         arm = float(meas.get("arm") or 30)
         assert cap >= arm + 4.0, \
             "%s: труба рукава %.1f уже плеча %.1f" % (mid, cap, arm)
+    if mid == "pillowcase":
+        # размер кроя и линии сгиба должны давать ровно размер подушки
+        def chk(pref):
+            return [v for n, v in draft.checks if n.startswith(pref)][0]
+        w_cut = chk("Ширина полотнища в крое")
+        l_cut = chk("Длина полотнища в крое")
+        a_top = chk("Верхняя линия сгиба")
+        b_bot = chk("Нижняя линия сгиба")
+        pw = float(meas.get("pillow_w", 0))
+        pl = float(meas.get("pillow_l", 0))
+        assert l_cut >= 2.0 * pl + 10.0, \
+            "%s: полотнище %.1f слишком короткое для подушки %g" % (mid, l_cut, pl)
+        finished_l = l_cut - a_top - b_bot
+        assert abs(finished_l - pl) <= 0.1, \
+            "%s: готовая длина %.2f != подушка %.1f" % (mid, finished_l, pl)
+        assert w_cut >= pw + 1.4, \
+            "%s: ширина кроя %.1f не вмещает подушку %.1f + припуски" % (mid, w_cut, pw)
 
 
 def main():

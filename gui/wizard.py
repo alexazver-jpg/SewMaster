@@ -115,9 +115,9 @@ class Wizard(tk.Toplevel):
         f = tk.Frame(self.container, bg=BG)
         f.pack(fill=tk.BOTH, expand=True)
         windows.page_header(f, "Выберите модель",
-                            "Что будем шить? Бельё, верх и низ — 7 встроенных "
-                            "моделей. Дополнительные можно докачать из "
-                            "онлайн-каталога.")
+                            "Что будем шить? Бельё, верх, низ и постельное — 8 "
+                            "встроенных моделей. Дополнительные можно докачать "
+                            "из онлайн-каталога.")
 
         wrap = tk.Frame(f, bg=BG)
         wrap.pack(fill=tk.BOTH, expand=True, padx=24, pady=8)
@@ -161,20 +161,26 @@ class Wizard(tk.Toplevel):
         self.state.model = model
         self.state.measurements = model.default_measurements()
         self.state.params = model.default_params()
-        self.state.audience.set(model.audience if model.audience != "uni"
-                                else "women")
+        self.state.audience.set("women" if model.audience in ("uni", "home")
+                                else model.audience)
         self.step = 1
         self.render_step()
 
     # ==================== шаг 2: мерки ====================
     def _page_measurements(self):
         model = self.state.model
+        home_item = (getattr(model, "audience", "") == "home")
         f = tk.Frame(self.container, bg=BG)
         f.pack(fill=tk.BOTH, expand=True)
-        windows.page_header(f, "Мерки — %s" % model.title,
-                            "Измерьте себя сантиметровой лентой. "
-                            "Нажмите «Заполнить по стандартному размеру», "
-                            "а затем поправьте значения под себя.")
+        if home_item:
+            windows.page_header(f, "Размеры — %s" % model.title,
+                                "Введите размеры подушки — измерьте её по шву "
+                                "или возьмите с этикетки (например, 70×70).")
+        else:
+            windows.page_header(f, "Мерки — %s" % model.title,
+                                "Измерьте себя сантиметровой лентой. "
+                                "Нажмите «Заполнить по стандартному размеру», "
+                                "а затем поправьте значения под себя.")
 
         body = tk.Frame(f, bg=BG)
         body.pack(fill=tk.BOTH, expand=True, padx=24, pady=8)
@@ -210,11 +216,40 @@ class Wizard(tk.Toplevel):
             left.grid_columnconfigure(2, weight=1)
             left.grid_columnconfigure(0, weight=1)
 
-        # правая колонка: стандартные размеры
+        # правая колонка: стандартные размеры или пресеты подушек
         right = tk.Frame(body, bg="white", highlightthickness=1,
                          highlightbackground=GRID_LIGHT)
         right.grid(row=0, column=1, sticky="nsew")
         body.grid_columnconfigure(1, weight=2)
+
+        if home_item:
+            tk.Label(right, text="Стандартные подушки", bg="white", fg=DARK,
+                     font=(ui_family(), 11, "bold")).pack(pady=(10, 4), padx=12,
+                                                            anchor="w")
+            for label, (pw, pl) in (("70 × 70 (русская)", (70.0, 70.0)),
+                                    ("50 × 70 (евро)", (50.0, 70.0))):
+                tk.Button(right, text=label, relief=tk.FLAT, bg=BLUE,
+                          fg="white", font=(ui_family(), 10, "bold"),
+                          padx=12, pady=5,
+                          command=lambda w=pw, l=pl: self._fill_pillow(w, l)
+                          ).pack(pady=4, padx=12, anchor="w")
+            tk.Label(right, text="Подсказка", bg="white", fg=DARK,
+                     font=(ui_family(), 11, "bold")).pack(pady=(14, 4),
+                                                          padx=12, anchor="w")
+            tk.Label(right, text=("Вход подушки (запах) делается по короткой "
+                                  "стороне — введите её в «ширину подушки».\n\n"
+                                  "Можно ввести любой размер: подушку 40×60 "
+                                  "или диванную 65×65 вводят вручную.\n\n"
+                                  "Наволочка — изделие по размерам вещи, а не "
+                                  "по меркам тела."),
+                     bg="white", fg=GRAY, font=(ui_family(), 9),
+                     justify=tk.LEFT, wraplength=260).pack(padx=12, anchor="w")
+            info = tk.Label(right, text="Расход ткани и линии сгиба программа "
+                              "рассчитает сама.",
+                            bg=BLUE_BG, fg=DARK, font=(ui_family(), 8),
+                            wraplength=240, justify=tk.LEFT)
+            info.pack(padx=12, pady=(4, 12), anchor="w")
+            return
 
         tk.Label(right, text="Подсказка", bg="white", fg=DARK,
                  font=(ui_family(), 11, "bold")).pack(pady=(10, 4), padx=12,
@@ -254,6 +289,12 @@ class Wizard(tk.Toplevel):
                         bg=BLUE_BG, fg=DARK, font=(ui_family(), 8),
                         wraplength=240, justify=tk.LEFT)
         info.pack(padx=12, pady=(4, 12), anchor="w")
+
+    def _fill_pillow(self, w: float, l: float):
+        for key, val in (("pillow_w", w), ("pillow_l", l)):
+            if key in self._meas_vars:
+                self._meas_vars[key].set("%g" % val)
+        self.state.size_label = "подушка %g×%g" % (w, l)
 
     def fill_from_size(self):
         model = self.state.model

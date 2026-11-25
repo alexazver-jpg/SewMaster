@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Callable, Dict
 
-from . import briefs, boxers, tank, tee, skirt_sun, shorts, longsleeve
+from . import briefs, boxers, tank, tee, skirt_sun, shorts, longsleeve, pillowcase
 
 # draft_type -> функция построения (мерки, параметры) -> DraftResult
 BUILDERS = {
@@ -15,4 +15,5 @@ BUILDERS = {
     "skirt_sun": skirt_sun.build,
     "shorts": shorts.build,
     "longsleeve": longsleeve.build,
+    "pillowcase": pillowcase.build,
 }  # type: Dict[str, Callable]

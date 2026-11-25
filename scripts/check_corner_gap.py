@@ -41,7 +41,7 @@ def min_gap_active(piece):
 
 
 def main():
-    for mid in ("shorts", "boxers", "skirt_sun", "briefs", "longsleeve", "tee", "tank"):
+    for mid in ("shorts", "boxers", "skirt_sun", "briefs", "longsleeve", "tee", "tank", "pillowcase"):
         mdef = MODELS_BY_ID[mid]
         res = mdef.build(mdef.default_measurements(), mdef.default_params())
         print("=== %s ===" % mid)

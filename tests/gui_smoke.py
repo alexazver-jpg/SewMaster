@@ -88,6 +88,10 @@ def run():
     # (в v1.0.0 здесь падал NameError: save_settings is not defined)
     test_export_and_save(wiz)
 
+    # v1.2.0: наволочка — ветка «home» мастера (кнопки подушек вместо
+    # типовых размеров одежды) + полный проход до экспорта PDF
+    test_pillowcase_wizard(root)
+
     # окно инструкции
     from gui import windows as W
     from core.instructions import build_instructions
@@ -147,6 +151,82 @@ def test_export_and_save(wiz):
 def _first_model():
     from core.models import MODELS
     return MODELS[0]
+
+
+def test_pillowcase_wizard(root):
+    """Полный проход мастера для наволочки (ветка «home»):
+    кнопка пресета подушки, шаг мерок без «типовых размеров»,
+    параметры, результат и экспорт PDF."""
+    from gui.wizard import Wizard
+    from core.models import MODELS_BY_ID
+
+    wiz = Wizard(root)
+    wiz.update_idletasks()
+    time.sleep(0.3)
+    wiz.update()
+
+    pc = MODELS_BY_ID["pillowcase"]
+    wiz.pick_model(pc)
+    wiz.update()
+    time.sleep(0.3)
+    grab(wiz, "08_wizard_pillow_measurements.png")
+
+    # кнопка «50 × 70 (евро)» — должна заполнить поля размеров
+    wiz._fill_pillow(50.0, 70.0)
+    assert wiz._meas_vars["pillow_w"].get() == "50"
+    assert wiz._meas_vars["pillow_l"].get() == "70"
+    assert wiz.validate_measurements(), "мерки подушки не прошли валидацию"
+    assert "50×70" in wiz.state.size_label
+
+    wiz.step = 2
+    wiz.render_step()
+    wiz.update()
+    wiz.step = 3
+    wiz.render_step()
+    wiz.update()
+    time.sleep(0.2)
+    grab(wiz, "09_wizard_pillow_params.png")
+
+    wiz.collect_params()
+    wiz.rebuild_draft()
+    assert wiz.state.draft is not None
+    piece = wiz.state.draft.pieces[0]
+    x0, y0, x1, y1 = piece.bbox(True)
+    assert abs((x1 - x0) - 53.0) < 0.1, "ширина кроя наволочки неверна"
+    assert abs((y1 - y0) - 164.0) < 0.1, "длина кроя наволочки неверна"
+
+    wiz.step = 4
+    wiz.render_step()
+    time.sleep(0.5)
+    wiz.update()
+    time.sleep(0.4)
+    wiz.preview.fit()
+    wiz.update()
+    time.sleep(0.3)
+    grab(wiz, "10_wizard_pillow_result.png")
+
+    # экспорт PDF из результата (диалог подменён)
+    import gui.wizard as W
+    pdf_path = os.path.join(OUT, "regress_pillowcase.pdf")
+
+    def fake_asksaveasfilename(**kw):
+        return pdf_path if kw.get("title", "").startswith("Экспорт") else ""
+
+    orig_ask = W.filedialog.asksaveasfilename
+    orig_askyesno = W.messagebox.askyesno
+    W.filedialog.asksaveasfilename = fake_asksaveasfilename
+    W.messagebox.askyesno = lambda *a, **kw: False
+    try:
+        wiz.export_pdf_action()
+    finally:
+        W.filedialog.asksaveasfilename = orig_ask
+        W.messagebox.askyesno = orig_askyesno
+    assert os.path.exists(pdf_path) and os.path.getsize(pdf_path) > 20000, \
+        "PDF наволочки не создан"
+    print("PILLOWCASE WIZARD OK: %s (%d КБ), крой %.1f x %.1f"
+          % (pdf_path, os.path.getsize(pdf_path) // 1024,
+             x1 - x0, y1 - y0))
+    wiz.destroy()
 
 
 if __name__ == "__main__":

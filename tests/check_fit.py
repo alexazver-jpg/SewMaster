@@ -75,9 +75,26 @@ def check(mid):
         wrist = meas.get("wrist") or meas["arm"] * 0.53
         print("  низ рукава: %.1f (запястье %.1f) %s"
               % (hem, wrist, "OK" if hem >= wrist + 3 else "УЗКО!"))
+    if mid == "pillowcase":
+        val = lambda pref: [v for n, v in d.checks if n.startswith(pref)][0]
+        w_cut = val("Ширина полотнища в крое")
+        l_cut = val("Длина полотнища в крое")
+        a_top = val("Верхняя линия сгиба")
+        b_bot = val("Нижняя линия сгиба")
+        pw, pl = meas["pillow_w"], meas["pillow_l"]
+        fin_l = l_cut - a_top - b_bot
+        fin_w = w_cut - 2.0 * m.default_params()["allowance"]
+        print("  крой: %.1f x %.1f (подушка %g x %g)"
+              % (w_cut, l_cut, pw, pl))
+        print("  готовый размер: %.1f x %.1f %s"
+              % (fin_w, fin_l,
+                 "OK" if abs(fin_w - pw) < 0.05 and abs(fin_l - pl) < 0.05
+                 else "НЕ СХОДИТСЯ!"))
+        print("  линии сгиба: верх %.1f / низ %.1f от краёв"
+              % (a_top, b_bot))
 
 
 if __name__ == "__main__":
     for mid in ("briefs", "boxers", "tank", "tee", "longsleeve",
-                "skirt_sun", "shorts"):
+                "skirt_sun", "shorts", "pillowcase"):
         check(mid)
